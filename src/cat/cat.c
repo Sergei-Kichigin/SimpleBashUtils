@@ -5,7 +5,7 @@
 
 void print_usage();
 void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
-                    bool number_all, bool squeeze_blank, bool display_tabs);
+                    bool number_all, bool squeeze_blank, bool display_tabs, int *total_line_number);
 
 int main(int argc, char *argv[]) {
   bool number_non_empty = false;  // -b
@@ -13,6 +13,8 @@ int main(int argc, char *argv[]) {
   bool number_all = false;        // -n
   bool squeeze_blank = false;     // -s
   bool display_tabs = false;      // -t
+
+	int total_line_number = 1;
 
   int i = 1;
 
@@ -39,7 +41,7 @@ int main(int argc, char *argv[]) {
 
   if (i == argc) {
     cat_with_flags(stdin, number_non_empty, display_ends, number_all,
-                   squeeze_blank, display_tabs);
+                   squeeze_blank, display_tabs, &total_line_number);
   } else {
     for (; i < argc; i++) {
       FILE *file = fopen(argv[i], "r");
@@ -49,7 +51,7 @@ int main(int argc, char *argv[]) {
       }
 
       cat_with_flags(file, number_non_empty, display_ends, number_all,
-                     squeeze_blank, display_tabs);
+                     squeeze_blank, display_tabs, &total_line_number);
 
       fclose(file);
     }
@@ -68,9 +70,9 @@ void print_usage() {
 }
 
 void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
-                    bool number_all, bool squeeze_blank, bool display_tabs) {
+                    bool number_all, bool squeeze_blank, bool display_tabs,  int *total_line_number) {
   char line[1024];
-  int line_number = 1;
+  // int line_number = 1;
   bool previous_line_was_blank = false;
 
   if (number_non_empty && number_all) {
@@ -93,14 +95,14 @@ void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
 
     if (number_non_empty) {
       if (line[0] != '\n' && line[0] != '\r') {
-        printf("%6d  ", line_number);
-        line_number++;
+        printf("%6d  ", *total_line_number);
+        (*total_line_number)++;
       }
     }
 
     if (number_all) {
-      printf("%6d  ", line_number);
-      line_number++;
+      printf("%6d  ", *total_line_number);
+      (*total_line_number)++;
     }
 
     for (int i = 0; i < line_len; i++) {
