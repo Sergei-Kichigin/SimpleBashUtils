@@ -36,8 +36,8 @@ int main(int argc, char *argv[]) {
 
     i++;
   }
-  printf("status of flags %d %d %d %d %d\n", number_non_empty, display_ends,
-         number_all, squeeze_blank, display_tabs);
+  // printf("status of flags %d %d %d %d %d\n", number_non_empty, display_ends,
+  //        number_all, squeeze_blank, display_tabs);
 
   if (i == argc) {
     cat_with_flags(stdin, number_non_empty, display_ends, number_all,
@@ -73,27 +73,58 @@ void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
                     bool number_all, bool squeeze_blank, bool display_tabs) {
   char line[1024];
   int line_number = 1;
+  bool previous_line_was_blank = false;
 
-  printf("b - %d \ne - %d \nn - %d \ns - %d \nt - %d\n\n\n\n", number_non_empty,
-         display_ends, number_all, squeeze_blank, display_tabs);
+  // printf("\n-----------\nb - %d \ne - %d \nn - %d \ns - %d \nt - %d\n-----------\n",
+  //        number_non_empty, display_ends, number_all, squeeze_blank,
+  //        display_tabs);
+
+  if (number_non_empty && number_all){
+    number_all = 0;
+  }
 
   while (fgets(line, sizeof(line), file) != NULL) {
+    int line_len = strlen(line);
+    if (squeeze_blank) {
+      if (line[0] == '\n') {
+        if (previous_line_was_blank) {
+          continue; 
+        } else {
+          previous_line_was_blank = true;
+        }
+      } else {
+        previous_line_was_blank = false;
+      }
+    }
 
     if (number_non_empty) {
-        if (line[0] != '\n' && line[0] != '\r') {
-            printf("%d %s", line_number, line);
-            line_number++;
-        } else {
-            printf("%s", line);
-        }
-    }
-    if (number_all) {
-        printf("%d %s", line_number, line);
+      if (line[0] != '\n' && line[0] != '\r') {
+        printf("%6d  ", line_number);
         line_number++;
+      }
     }
-    if (display_ends) {
-        line[strlen(line) - 1] = '$';
-        printf("%s\n", line);
+
+    if (number_all) {
+      printf("%6d  ", line_number);
+      line_number++;
+    }
+
+    for (int i = 0; i < line_len; i++) {
+      if (display_ends) {
+        if (line[i] == '\n') {
+          putchar('$');
+        }
+      }
+
+      if (display_tabs) {
+        if (line[i] == '\t') {
+          putchar('^');
+          putchar('I');
+          i++;
+        }
+      }
+
+      putchar(line[i]);
     }
   }
 }
