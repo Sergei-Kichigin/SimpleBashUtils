@@ -36,8 +36,6 @@ int main(int argc, char *argv[]) {
 
     i++;
   }
-  // printf("status of flags %d %d %d %d %d\n", number_non_empty, display_ends,
-  //        number_all, squeeze_blank, display_tabs);
 
   if (i == argc) {
     cat_with_flags(stdin, number_non_empty, display_ends, number_all,
@@ -75,11 +73,7 @@ void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
   int line_number = 1;
   bool previous_line_was_blank = false;
 
-  // printf("\n-----------\nb - %d \ne - %d \nn - %d \ns - %d \nt - %d\n-----------\n",
-  //        number_non_empty, display_ends, number_all, squeeze_blank,
-  //        display_tabs);
-
-  if (number_non_empty && number_all){
+  if (number_non_empty && number_all) {
     number_all = 0;
   }
 
@@ -88,7 +82,7 @@ void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
     if (squeeze_blank) {
       if (line[0] == '\n') {
         if (previous_line_was_blank) {
-          continue; 
+          continue;
         } else {
           previous_line_was_blank = true;
         }
@@ -116,8 +110,8 @@ void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
         }
       }
 
-      if (display_tabs) {
-        if (line[i] == '\t') {
+      if (display_tabs && line[i] == '\t') {
+        while (line[i] == '\t') {
           putchar('^');
           putchar('I');
           i++;
