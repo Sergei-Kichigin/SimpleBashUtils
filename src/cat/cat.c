@@ -112,6 +112,7 @@ void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
 			}
 		}
 
+
 		if (number_all) {
 			printf("%6d\t", *total_line_number);
 			(*total_line_number)++;
