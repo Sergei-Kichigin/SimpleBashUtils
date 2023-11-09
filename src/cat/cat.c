@@ -7,20 +7,19 @@ void print_usage();
 void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
                     bool number_all, bool squeeze_blank, bool display_tabs,
                     bool invert_output, int *total_line_number, bool *new_line);
-bool isNonPrintable(char current_char);
+
 
 int main(int argc, char *argv[]) {
-  bool number_non_empty = false;  // -b
-  bool display_ends = false;      // -e
-  bool number_all = false;        // -n
-  bool squeeze_blank = false;     // -s
-  bool display_tabs = false;      // -t
-  bool invert_output = false;     // -v
+  bool number_non_empty = false;
+  bool display_ends = false;
+  bool number_all = false;
+  bool squeeze_blank = false;
+  bool display_tabs = false;
+  bool invert_output = false;
 
-  bool new_line = true;  // new line
+  bool new_line = true;
 
   int total_line_number = 1;
-
   int i = 1;
 
   while (i < argc && argv[i][0] == '-') {
@@ -42,11 +41,10 @@ int main(int argc, char *argv[]) {
       display_tabs = true;
       invert_output = true;
     } else {
-      printf("s21_cat: Неизвестный флаг: %s\n", flag);
+      printf("s21_cat: unknown flag: %s\n", flag);
       print_usage();
       return 1;
     }
-
     i++;
   }
 
@@ -58,10 +56,9 @@ int main(int argc, char *argv[]) {
     for (; i < argc; i++) {
       FILE *file = fopen(argv[i], "r");
       if (file == NULL) {
-        perror("my_cat");
+        perror("problems with file");
         return 1;
       }
-
       cat_with_flags(file, number_non_empty, display_ends, number_all,
                      squeeze_blank, display_tabs, invert_output,
                      &total_line_number, &new_line);
@@ -73,61 +70,44 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void print_usage() {
-  printf("Использование: s21_cat [-bent] [файл...]\n");
-  printf("  -b  Нумеровать только непустые строки\n");
-  printf("  -e  Выводить символ $ в конце каждой строки\n");
-  printf("  -n  Нумеровать все строки\n");
-  printf("  -s  Удалять пустые строки\n");
-  printf("  -t  Заменять символы TAB на ^I\n");
-}
-
 void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
                     bool number_all, bool squeeze_blank, bool display_tabs,
                     bool invert_output, int *total_line_number,
                     bool *new_line) {
-  int prev_char = '\n';
+
   int current_char = fgetc(file);
-  int counter = 0;
-  if (number_non_empty && number_all) {
-    number_all = 0;
+  static int lf_counter = 1;
+
+  if (number_all && number_non_empty) {
+    number_all = false;
   }
 
   while (!feof(file)) {
+    // -s
     if (squeeze_blank) {
-      if (current_char == '\n' && prev_char == '\n' && *new_line) {
-        counter++;
+      if (current_char == '\n') {
+        lf_counter++;
+      } else {
+        lf_counter = 0;
       }
-      else {
-        counter = 0;
+    }
+
+    // -b / -n
+    if (current_char != '\n' || lf_counter <= 2) {
+      if (*new_line) {
+        if (number_all) {
+          printf("%6d\t", *total_line_number);
+          (*total_line_number)++;
+        } else if (number_non_empty && current_char != '\n') {
+          printf("%6d\t", *total_line_number);
+          (*total_line_number)++;
+        }
         *new_line = false;
       }
-    }
 
-    if (*new_line && counter < 2) {
-      if (number_all) {
-        printf("%6d\t", *total_line_number);
-        (*total_line_number)++;
-      } else if (number_non_empty && current_char != '\n') {
-        printf("%6d\t", *total_line_number);
-        (*total_line_number)++;
-      }
-      *new_line = false;
-    }
-
-    if (invert_output) {
-      if (current_char < 32 && current_char != '\n' && current_char != '\t') {
-        printf("^");
-        current_char += 64;
-      }
-      if (current_char == 127) {
-        printf("^");
-        current_char = 63;
-      }
-      if (current_char > 127) {
-        printf("M-");
-        current_char -= 128;
-        if (current_char < 32) {
+      // -v
+      if (invert_output) {
+        if (current_char < 32 && current_char != '\n' && current_char != '\t') {
           printf("^");
           current_char += 64;
         }
@@ -135,28 +115,47 @@ void cat_with_flags(FILE *file, bool number_non_empty, bool display_ends,
           printf("^");
           current_char = 63;
         }
+        if (current_char > 127) {
+          printf("M-");
+          current_char -= 128;
+          if (current_char < 32) {
+            printf("^");
+            current_char += 64;
+          }
+          if (current_char == 127) {
+            printf("^");
+            current_char = 63;
+          }
+        }
       }
-    }
 
-    if (display_ends) {
+      // -E
+      if (display_ends) {
+        if (current_char == '\n') {
+          printf("$");
+        }
+      }
+      // -T
+      if (display_tabs && current_char == '\t') {
+        printf("^");
+        current_char += 64;
+      }
+
       if (current_char == '\n') {
-        printf("$");
+        *new_line = true;
       }
-    }
-
-    if (display_tabs && current_char == '\t') {
-      printf("^");
-      current_char += 64;
-    }
-
-    if (current_char == '\n') {
-      *new_line = true;
-    }
-    if (counter < 2){
       putchar(current_char);
-    
     }
-    prev_char = current_char;
+
     current_char = fgetc(file);
   }
+}
+
+void print_usage() {
+  printf("Использование: s21_cat [-bent] [файл...]\n");
+  printf("  -b  Нумеровать только непустые строки\n");
+  printf("  -e  Выводить символ $ в конце каждой строки\n");
+  printf("  -n  Нумеровать все строки\n");
+  printf("  -s  Удалять пустые строки\n");
+  printf("  -t  Заменять символы TAB на ^I\n");
 }
