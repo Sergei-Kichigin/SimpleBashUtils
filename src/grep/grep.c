@@ -7,7 +7,8 @@
 #include <unistd.h>
 
 int main(int argc, char* argv[]) {
-  GrepOptions options = {{NULL}, 0, false, false, false, false, false, false, false, false};
+  GrepOptions options = {{NULL}, 0,     false, false, false,
+                         false,  false, false, false, false};
   bool pattern_flag = false;
   int opt;
   while ((opt = getopt(argc, argv, "e:ivclnhs")) != -1) {
@@ -146,7 +147,8 @@ int process_file(const GrepOptions* options, const char* filename,
       match_count++;
       line_has_match = true;
       if (!options->print_filenames && !options->count_lines) {
-        if (options->need_filename && !options->hide_filenames) printf("%s:", filename);
+        if (options->need_filename && !options->hide_filenames)
+          printf("%s:", filename);
         if (options->print_line_numbers) printf("%d:", line_number);
         printf("%s", line);
       }
