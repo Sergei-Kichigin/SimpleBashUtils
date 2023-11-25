@@ -29,6 +29,12 @@ int main(int argc, char *argv[]) {
     i++;
   }
 
+  if (i == argc) {
+    fprintf(stderr, "Error: Missed filename\n");
+    print_usage();
+    return ERROR;
+  }
+
   for (; i < argc; i++) {
     FILE *file = fopen(argv[i], "r");
     if (file == NULL) {
@@ -64,7 +70,7 @@ void process_flag(char *flag, bool *number_non_empty, bool *display_ends,
     *display_tabs = true;
     *invert_output = true;
   } else {
-    printf("s21_cat: unknown flag: %s\n", flag);
+    fprintf(stderr, "s21_cat: unknown flag: %s\n", flag);
     print_usage();
     exit(ERROR);
   }

@@ -30,7 +30,7 @@ pcre* compile_combined_pattern(const GrepOptions* options);
 int read_patterns_from_file(GrepOptions* options);
 void print_usage();
 void cleanup(pcre* re);
-int process_file(const GrepOptions* options, const char* filename,
+int process_file(GrepOptions* options, const char* filename,
                  pcre* combined_regex);
 void cleanup_options(GrepOptions* options);
 

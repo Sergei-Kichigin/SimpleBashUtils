@@ -9,7 +9,7 @@
 int main(int argc, char *argv[]) {
   GrepOptions options = {{NULL}, 0,     false, false, false, false, false,
                          false,  false, false, false, false, NULL};
-  int opt;
+  int opt = 0;
   if (argc == 1) {
     print_usage();
     return ERROR;
@@ -52,7 +52,6 @@ int main(int argc, char *argv[]) {
       case 'f':
         options.read_patterns_from_file = true;
         options.pattern_file = strdup(optarg);
-        // printf("%s", optarg);
         break;
       case '?':
         fprintf(stderr, "Error: Unknown option\n");
@@ -75,7 +74,7 @@ int main(int argc, char *argv[]) {
 
   if (optind == argc) {
     fprintf(stderr, "Error: Missed filename\n");
-    // print_usage();
+    print_usage();
     cleanup_options(&options);
     return ERROR;
   }
@@ -145,7 +144,7 @@ void cleanup(pcre *re) {
 }
 
 pcre *compile_combined_pattern(const GrepOptions *options) {
-  char combined_pattern[MAX_LINE_LENGTH * MAX_PATTERNS];
+  char combined_pattern[MAX_LINE_LENGTH * MAX_PATTERNS] = {0};
   strcpy(combined_pattern, "(?:");
 
   for (int pattern_index = 0; pattern_index < options->pattern_count;
@@ -158,8 +157,8 @@ pcre *compile_combined_pattern(const GrepOptions *options) {
 
   strcat(combined_pattern, ")");
 
-  const char *error;
-  int erroffset;
+  const char *error = NULL;
+  int erroffset = 0;
   pcre *combined_regex =
       pcre_compile(combined_pattern, options->ignore_case ? PCRE_CASELESS : 0,
                    &error, &erroffset, NULL);
@@ -172,7 +171,7 @@ pcre *compile_combined_pattern(const GrepOptions *options) {
   return combined_regex;
 }
 
-int process_file(const GrepOptions *options, const char *filename,
+int process_file(GrepOptions *options, const char *filename,
                  pcre *combined_regex) {
   FILE *file = fopen(filename, "r");
   if (file == NULL && !options->silent_mode) {
@@ -180,7 +179,7 @@ int process_file(const GrepOptions *options, const char *filename,
     return ERROR;
   }
 
-  char line[MAX_LINE_LENGTH];
+  char line[MAX_LINE_LENGTH] = {0};
   int line_number = 0;
   int match_count = 0;
   bool line_has_match = false;
@@ -206,7 +205,6 @@ int process_file(const GrepOptions *options, const char *filename,
       }
     }
   }
-  fclose(file);
   if (options->count_lines) {
     if (options->need_filename && !options->hide_filenames) {
       printf("%s:%d\n", filename, match_count);
@@ -216,12 +214,19 @@ int process_file(const GrepOptions *options, const char *filename,
   } else if (options->print_filenames && line_has_match) {
     printf("%s\n", filename);
   }
+  fclose(file);
   return SUCCESS;
 }
 
 void cleanup_options(GrepOptions *options) {
   for (int i = 0; i < options->pattern_count; i++) {
-    free(options->patterns[i]);
+    if (options->patterns[i] != NULL) {
+      free(options->patterns[i]);
+    }
   }
-  free(options->pattern_file);
+  options->pattern_count = 0;
+
+  if (options->pattern_file != NULL) {
+    free(options->pattern_file);
+  }
 }
