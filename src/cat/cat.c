@@ -18,30 +18,29 @@ int main(int argc, char *argv[]) {
   int total_line_number = 1;
   int i = 1;
 
+  if (argc == 1) {
+    print_usage();
+    return ERROR;
+  }
+
   while (i < argc && argv[i][0] == '-') {
     process_flag(argv[i], &number_non_empty, &display_ends, &number_all,
                  &squeeze_blank, &display_tabs, &invert_output);
     i++;
   }
 
-  if (i == argc) {
-    cat_with_flags(stdin, number_non_empty, display_ends, number_all,
+  for (; i < argc; i++) {
+    FILE *file = fopen(argv[i], "r");
+    if (file == NULL) {
+      fprintf(stderr, "No such file or directory\n");
+      return ERROR;
+    }
+    cat_with_flags(file, number_non_empty, display_ends, number_all,
                    squeeze_blank, display_tabs, invert_output,
                    &total_line_number, &new_line);
-  } else {
-    for (; i < argc; i++) {
-      FILE *file = fopen(argv[i], "r");
-      if (file == NULL) {
-        fprintf(stderr, "No such file or directory\n");
-        return ERROR;
-      }
-      cat_with_flags(file, number_non_empty, display_ends, number_all,
-                     squeeze_blank, display_tabs, invert_output,
-                     &total_line_number, &new_line);
-      fclose(file);
-    }
-    return SUCCESS;
+    fclose(file);
   }
+  return SUCCESS;
 }
 
 void process_flag(char *flag, bool *number_non_empty, bool *display_ends,
