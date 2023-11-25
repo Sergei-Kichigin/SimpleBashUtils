@@ -7,10 +7,10 @@
 #include <unistd.h>
 
 int main(int argc, char* argv[]) {
-  GrepOptions options = {{NULL}, 0,     false, false, false, false,
-                         false,  false, false, false, false, false};
+  GrepOptions options = {{NULL}, 0,     false, false, false, false, false,
+                         false,  false, false, false, false, NULL};
   int opt;
-  while ((opt = getopt(argc, argv, "e:ivclnhs")) != -1) {
+  while ((opt = getopt(argc, argv, "e:ivclnhsf:")) != -1) {
     switch (opt) {
       case 'e':
         options.read_patterns = true;
@@ -45,6 +45,11 @@ int main(int argc, char* argv[]) {
       case 's':
         options.silent_mode = true;
         break;
+      case 'f':
+        options.read_patterns_from_file = true;
+        options.pattern_file = strdup(optarg);
+        // printf("%s", optarg);
+        break;
       case '?':
         fprintf(stderr, "Error: Unknown option\n");
         print_usage();
@@ -53,8 +58,15 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  if (!options.read_patterns) {
+  if (!options.read_patterns && !options.read_patterns_from_file) {
     options.patterns[options.pattern_count++] = strdup(argv[optind++]);
+  }
+
+  if (options.read_patterns_from_file) {
+    if (read_patterns_from_file(&options) != SUCCESS) {
+      cleanup_options(&options);
+      return ERROR;
+    }
   }
 
   if (optind == argc) {
@@ -90,6 +102,29 @@ int main(int argc, char* argv[]) {
 
   pcre_free(combined_regex);
   cleanup_options(&options);
+  return SUCCESS;
+}
+
+int read_patterns_from_file(GrepOptions* options) {
+  FILE* pattern_file = fopen(options->pattern_file, "r");
+  if (pattern_file == NULL) {
+    fprintf(stderr, "Error: Cannot open pattern file %s\n",
+            options->pattern_file);
+    return ERROR;
+  }
+
+  char line[MAX_LINE_LENGTH];
+  while (fgets(line, sizeof(line), pattern_file) != NULL) {
+    if (options->pattern_count < MAX_PATTERNS - 1) {
+      options->patterns[options->pattern_count++] = strdup(line);
+    } else {
+      fprintf(stderr, "Error: Too many patterns\n");
+      fclose(pattern_file);
+      return ERROR;
+    }
+  }
+
+  fclose(pattern_file);
   return SUCCESS;
 }
 
@@ -147,6 +182,12 @@ int process_file(const GrepOptions* options, const char* filename,
   bool line_has_match = false;
 
   while (fgets(line, sizeof(line), file) != NULL) {
+    size_t line_length = strlen(line);
+    if (line_length > 0 && line[line_length - 1] != '\n') {
+      line[line_length] = '\n';
+      line[line_length + 1] = '\0';
+    }
+
     line_number++;
     int rc = pcre_exec(combined_regex, NULL, line, strlen(line), 0, 0, NULL, 0);
     if ((rc >= 0 && !options->invert_match) ||
@@ -178,4 +219,5 @@ void cleanup_options(GrepOptions* options) {
   for (int i = 0; i < options->pattern_count; i++) {
     free(options->patterns[i]);
   }
+  free(options->pattern_file);
 }
