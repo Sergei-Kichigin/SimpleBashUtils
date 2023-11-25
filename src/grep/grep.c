@@ -6,10 +6,14 @@
 #include <string.h>
 #include <unistd.h>
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   GrepOptions options = {{NULL}, 0,     false, false, false, false, false,
                          false,  false, false, false, false, NULL};
   int opt;
+  if (argc == 1) {
+    print_usage();
+    return ERROR;
+  }
   while ((opt = getopt(argc, argv, "e:ivclnhsf:")) != -1) {
     switch (opt) {
       case 'e':
@@ -84,7 +88,7 @@ int main(int argc, char* argv[]) {
     options.count_lines = false;
   }
 
-  pcre* combined_regex = compile_combined_pattern(&options);
+  pcre *combined_regex = compile_combined_pattern(&options);
 
   if (combined_regex == NULL) {
     cleanup_options(&options);
@@ -105,8 +109,8 @@ int main(int argc, char* argv[]) {
   return SUCCESS;
 }
 
-int read_patterns_from_file(GrepOptions* options) {
-  FILE* pattern_file = fopen(options->pattern_file, "r");
+int read_patterns_from_file(GrepOptions *options) {
+  FILE *pattern_file = fopen(options->pattern_file, "r");
   if (pattern_file == NULL) {
     fprintf(stderr, "Error: Cannot open pattern file %s\n",
             options->pattern_file);
@@ -134,13 +138,13 @@ void print_usage() {
       "filename\n");
 }
 
-void cleanup(pcre* re) {
+void cleanup(pcre *re) {
   if (re != NULL) {
     pcre_free(re);
   }
 }
 
-pcre* compile_combined_pattern(const GrepOptions* options) {
+pcre *compile_combined_pattern(const GrepOptions *options) {
   char combined_pattern[MAX_LINE_LENGTH * MAX_PATTERNS];
   strcpy(combined_pattern, "(?:");
 
@@ -154,9 +158,9 @@ pcre* compile_combined_pattern(const GrepOptions* options) {
 
   strcat(combined_pattern, ")");
 
-  const char* error;
+  const char *error;
   int erroffset;
-  pcre* combined_regex =
+  pcre *combined_regex =
       pcre_compile(combined_pattern, options->ignore_case ? PCRE_CASELESS : 0,
                    &error, &erroffset, NULL);
 
@@ -168,9 +172,9 @@ pcre* compile_combined_pattern(const GrepOptions* options) {
   return combined_regex;
 }
 
-int process_file(const GrepOptions* options, const char* filename,
-                 pcre* combined_regex) {
-  FILE* file = fopen(filename, "r");
+int process_file(const GrepOptions *options, const char *filename,
+                 pcre *combined_regex) {
+  FILE *file = fopen(filename, "r");
   if (file == NULL && !options->silent_mode) {
     fprintf(stderr, "No such file or directory\n");
     return ERROR;
@@ -215,7 +219,7 @@ int process_file(const GrepOptions* options, const char* filename,
   return SUCCESS;
 }
 
-void cleanup_options(GrepOptions* options) {
+void cleanup_options(GrepOptions *options) {
   for (int i = 0; i < options->pattern_count; i++) {
     free(options->patterns[i]);
   }
