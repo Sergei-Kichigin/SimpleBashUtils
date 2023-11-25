@@ -7,14 +7,13 @@
 #include <unistd.h>
 
 int main(int argc, char* argv[]) {
-  GrepOptions options = {{NULL}, 0,     false, false, false,
-                         false,  false, false, false, false};
-  bool pattern_flag = false;
+  GrepOptions options = {{NULL}, 0,     false, false, false, false,
+                         false,  false, false, false, false, false};
   int opt;
   while ((opt = getopt(argc, argv, "e:ivclnhs")) != -1) {
     switch (opt) {
       case 'e':
-        pattern_flag = true;
+        options.read_patterns = true;
         if (options.pattern_count < MAX_PATTERNS - 1) {
           options.patterns[options.pattern_count++] =
               strndup(optarg, MAX_LINE_LENGTH);
@@ -22,7 +21,7 @@ int main(int argc, char* argv[]) {
           fprintf(stderr, "Error: Too many patterns\n");
           print_usage();
           cleanup_options(&options);
-          return EXIT_CODE_ERROR;
+          return ERROR;
         }
         break;
       case 'i':
@@ -50,12 +49,19 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Error: Unknown option\n");
         print_usage();
         cleanup_options(&options);
-        return EXIT_CODE_ERROR;
+        return ERROR;
     }
   }
 
-  if (!pattern_flag && optind < argc) {
+  if (!options.read_patterns) {
     options.patterns[options.pattern_count++] = strdup(argv[optind++]);
+  }
+
+  if (optind == argc) {
+    fprintf(stderr, "Error: Missed filename\n");
+    // print_usage();
+    cleanup_options(&options);
+    return ERROR;
   }
 
   if (argc - optind > 1) {
@@ -70,12 +76,12 @@ int main(int argc, char* argv[]) {
 
   if (combined_regex == NULL) {
     cleanup_options(&options);
-    return EXIT_CODE_ERROR;
+    return ERROR;
   }
 
   for (int i = optind; i < argc; i++) {
     int process_result = process_file(&options, argv[i], combined_regex);
-    if (process_result != EXIT_CODE_SUCCESS) {
+    if (process_result != SUCCESS) {
       cleanup_options(&options);
       pcre_free(combined_regex);
       return process_result;
@@ -84,11 +90,13 @@ int main(int argc, char* argv[]) {
 
   pcre_free(combined_regex);
   cleanup_options(&options);
-  return EXIT_CODE_SUCCESS;
+  return SUCCESS;
 }
 
 void print_usage() {
-  printf("Использование: [-e pattern] [-i] [-v] [-c] [-l] [-n] filename\n");
+  printf(
+      "Использование: [-e pattern] [-i] [-v] [-c] [-l] [-n] [-h] [-s] "
+      "filename\n");
 }
 
 void cleanup(pcre* re) {
@@ -129,8 +137,8 @@ int process_file(const GrepOptions* options, const char* filename,
                  pcre* combined_regex) {
   FILE* file = fopen(filename, "r");
   if (file == NULL && !options->silent_mode) {
-    perror("Error opening file");
-    return EXIT_CODE_ERROR;
+    fprintf(stderr, "No such file or directory\n");
+    return ERROR;
   }
 
   char line[MAX_LINE_LENGTH];
@@ -140,7 +148,6 @@ int process_file(const GrepOptions* options, const char* filename,
 
   while (fgets(line, sizeof(line), file) != NULL) {
     line_number++;
-
     int rc = pcre_exec(combined_regex, NULL, line, strlen(line), 0, 0, NULL, 0);
     if ((rc >= 0 && !options->invert_match) ||
         (rc < 0 && options->invert_match)) {
@@ -154,9 +161,7 @@ int process_file(const GrepOptions* options, const char* filename,
       }
     }
   }
-
   fclose(file);
-
   if (options->count_lines) {
     if (options->need_filename && !options->hide_filenames) {
       printf("%s:%d\n", filename, match_count);
@@ -166,8 +171,7 @@ int process_file(const GrepOptions* options, const char* filename,
   } else if (options->print_filenames && line_has_match) {
     printf("%s\n", filename);
   }
-
-  return EXIT_CODE_SUCCESS;
+  return SUCCESS;
 }
 
 void cleanup_options(GrepOptions* options) {

@@ -4,8 +4,8 @@
 
 #define MAX_PATTERNS 10
 #define MAX_LINE_LENGTH 2048
-#define EXIT_CODE_SUCCESS 0
-#define EXIT_CODE_ERROR 1
+#define SUCCESS 0
+#define ERROR 1
 
 #include <pcre.h>
 #include <stdbool.h>
@@ -13,6 +13,7 @@
 typedef struct {
   char* patterns[MAX_PATTERNS];
   int pattern_count;
+  bool read_patterns;
   bool ignore_case;
   bool invert_match;
   bool count_lines;
@@ -21,6 +22,7 @@ typedef struct {
   bool need_filename;
   bool hide_filenames;
   bool silent_mode;
+  bool read_patterns_from_file;
 } GrepOptions;
 
 pcre* compile_combined_pattern(const GrepOptions* options);
