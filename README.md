@@ -1,8 +1,6 @@
 # SimpleBashUtils
 The educational project "Schools 21" on the development of analogues of standard Linux utilities such as "cat" and "grep".
 
-## Project Description
-
 ### cat History
 
 > cat was part of the early versions of Unix, e.g., Version 1, and replaced pr, a PDP-7 and Multics utility for copying a single file to the screen.
